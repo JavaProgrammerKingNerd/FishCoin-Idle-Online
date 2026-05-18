@@ -1,0 +1,605 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.Random;
+
+
+class Player implements Serializable {
+
+
+   String name;
+   int money;
+   int rodLevel;
+   int baitLevel;
+   int totalFish;
+   int legendaryFish;
+
+
+   public Player(String name) {
+       this.name = name;
+       this.money = 100;
+       this.rodLevel = 1;
+       this.baitLevel = 1;
+       this.totalFish = 0;
+       this.legendaryFish = 0;
+   }
+}
+
+
+public class Main extends JPanel implements ActionListener {
+
+
+   static Player player;
+
+
+   JFrame frame;
+
+
+   Timer timer;
+
+
+   JButton fishButton;
+   JButton rodButton;
+   JButton baitButton;
+   JButton saveButton;
+
+
+   JLabel moneyLabel;
+   JLabel rodLabel;
+   JLabel baitLabel;
+   JLabel fishLabel;
+
+
+   JTextArea logArea;
+
+
+   JProgressBar fishingBar;
+
+
+   Random random = new Random();
+
+
+   int fishX = -100;
+   int waterOffset = 0;
+
+
+   boolean fishing = false;
+
+
+   public Main() {
+
+
+       loadPlayer();
+
+
+       frame = new JFrame("🎣 Quantum Fishing RPG Deluxe");
+
+
+       frame.setSize(1000, 700);
+       frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+       frame.setLayout(null);
+
+
+       setBounds(0, 0, 1000, 700);
+
+
+       moneyLabel = createLabel(30, 20);
+       rodLabel = createLabel(30, 60);
+       baitLabel = createLabel(30, 100);
+       fishLabel = createLabel(30, 140);
+
+
+       fishButton = createButton("🎣 HORGÁSZÁS", 30, 220);
+       rodButton = createButton("⬆ BOT FEJLESZTÉS", 30, 290);
+       baitButton = createButton("🪱 CSALI FEJLESZTÉS", 30, 360);
+       saveButton = createButton("💾 MENTÉS", 30, 430);
+
+
+       fishingBar = new JProgressBar();
+       fishingBar.setBounds(250, 560, 500, 35);
+       fishingBar.setMaximum(100);
+       fishingBar.setForeground(Color.CYAN);
+       fishingBar.setBackground(Color.BLACK);
+
+
+       logArea = new JTextArea();
+
+
+       logArea.setBounds(720, 20, 240, 550);
+       logArea.setBackground(Color.BLACK);
+       logArea.setForeground(Color.GREEN);
+       logArea.setFont(new Font("Monospaced", Font.BOLD, 14));
+       logArea.setEditable(false);
+
+
+       fishButton.addActionListener(this);
+       rodButton.addActionListener(this);
+       baitButton.addActionListener(this);
+       saveButton.addActionListener(this);
+
+
+       frame.add(moneyLabel);
+       frame.add(rodLabel);
+       frame.add(baitLabel);
+       frame.add(fishLabel);
+
+
+       frame.add(fishButton);
+       frame.add(rodButton);
+       frame.add(baitButton);
+       frame.add(saveButton);
+
+
+       frame.add(fishingBar);
+       frame.add(logArea);
+
+
+       frame.add(this);
+
+
+       updateLabels();
+
+
+       timer = new Timer(16, e -> {
+
+
+           waterOffset += 2;
+
+
+           if (waterOffset > 40) {
+               waterOffset = 0;
+           }
+
+
+           if (fishing) {
+               fishX += 8;
+           }
+
+
+           repaint();
+       });
+
+
+       timer.start();
+
+
+       frame.setVisible(true);
+
+
+       log("🎮 Üdv a Quantum Fishing RPG-ben!");
+   }
+
+
+   JLabel createLabel(int x, int y) {
+
+
+       JLabel label = new JLabel();
+
+
+       label.setBounds(x, y, 400, 30);
+
+
+       label.setForeground(Color.WHITE);
+
+
+       label.setFont(new Font("Arial", Font.BOLD, 20));
+
+
+       return label;
+   }
+
+
+   JButton createButton(String text, int x, int y) {
+
+
+       JButton button = new JButton(text);
+
+
+       button.setBounds(x, y, 250, 50);
+
+
+       button.setFocusPainted(false);
+
+
+       button.setBackground(new Color(40, 40, 40));
+
+
+       button.setForeground(Color.WHITE);
+
+
+       button.setFont(new Font("Arial", Font.BOLD, 16));
+
+
+       return button;
+   }
+
+
+   void updateLabels() {
+
+
+       moneyLabel.setText("💰 Money: " + player.money + "$");
+       rodLabel.setText("🎣 Rod Level: " + player.rodLevel);
+       baitLabel.setText("🪱 Bait Level: " + player.baitLevel);
+       fishLabel.setText("🐟 Fish Caught: " + player.totalFish);
+   }
+
+
+   void log(String text) {
+
+
+       logArea.append(text + "\n");
+
+
+       logArea.setCaretPosition(logArea.getDocument().getLength());
+   }
+
+
+   void startFishing() {
+
+
+       if (fishing) return;
+
+
+       fishing = true;
+
+
+       fishX = -100;
+
+
+       fishingBar.setValue(0);
+
+
+       Timer fishTimer = new Timer(40, null);
+
+
+       fishTimer.addActionListener(new ActionListener() {
+
+
+           int progress = 0;
+
+
+           @Override
+           public void actionPerformed(ActionEvent e) {
+
+
+               progress++;
+
+
+               fishingBar.setValue(progress);
+
+
+               if (progress >= 100) {
+
+
+                   fishTimer.stop();
+
+
+                   catchFish();
+
+
+                   fishing = false;
+               }
+           }
+       });
+
+
+       fishTimer.start();
+   }
+
+
+   void catchFish() {
+
+
+       int luck = random.nextInt(100) + player.baitLevel * 5;
+
+
+       String fishName;
+       int value;
+
+
+       if (luck >= 90) {
+
+
+           fishName = "🐙 QUANTUM KRAKEN";
+           value = 1500;
+
+
+           player.legendaryFish++;
+
+
+       } else if (luck >= 70) {
+
+
+           fishName = "🦈 RGB SHARK";
+           value = 700;
+
+
+       } else if (luck >= 50) {
+
+
+           fishName = "🐟 CYBER TUNA";
+           value = 300;
+
+
+       } else if (luck >= 20) {
+
+
+           fishName = "🐠 SIGMA CARP";
+           value = 120;
+
+
+       } else {
+
+
+           fishName = "🐡 SMALL FISH";
+           value = 40;
+       }
+
+
+       value += player.rodLevel * 20;
+
+
+       player.money += value;
+
+
+       player.totalFish++;
+
+
+       log("🎣 Fogtál egy: " + fishName);
+       log("💰 +" + value + "$");
+
+
+       randomEvent();
+
+
+       updateLabels();
+   }
+
+
+   void randomEvent() {
+
+
+       int chance = random.nextInt(100);
+
+
+       if (chance < 20) {
+
+
+           int bonus = random.nextInt(500) + 100;
+
+
+           player.money += bonus;
+
+
+           log("✨ RANDOM EVENT!");
+           log("📦 Gamer lootbox!");
+           log("💵 +" + bonus + "$");
+       }
+   }
+
+
+   void upgradeRod() {
+
+
+       int cost = player.rodLevel * 250;
+
+
+       if (player.money >= cost) {
+
+
+           player.money -= cost;
+
+
+           player.rodLevel++;
+
+
+           log("⬆ Bot fejlesztve!");
+
+
+       } else {
+
+
+           log("❌ Kevés pénz!");
+       }
+
+
+       updateLabels();
+   }
+
+
+   void upgradeBait() {
+
+
+       int cost = player.baitLevel * 200;
+
+
+       if (player.money >= cost) {
+
+
+           player.money -= cost;
+
+
+           player.baitLevel++;
+
+
+           log("⬆ Csali fejlesztve!");
+
+
+       } else {
+
+
+           log("❌ Kevés pénz!");
+       }
+
+
+       updateLabels();
+   }
+
+
+   void saveGame() {
+
+
+       try {
+
+
+           ObjectOutputStream out =
+                   new ObjectOutputStream(
+                           new FileOutputStream("save.dat"));
+
+
+           out.writeObject(player);
+
+
+           out.close();
+
+
+           log("💾 Játék mentve!");
+
+
+       } catch (Exception e) {
+
+
+           log("❌ Mentési hiba!");
+       }
+   }
+
+
+   void loadPlayer() {
+
+
+       try {
+
+
+           ObjectInputStream in =
+                   new ObjectInputStream(
+                           new FileInputStream("save.dat"));
+
+
+           player = (Player) in.readObject();
+
+
+           in.close();
+
+
+       } catch (Exception e) {
+
+
+           String name =
+                   JOptionPane.showInputDialog(
+                           "Add meg a gamer neved:");
+
+
+           player = new Player(name);
+       }
+   }
+
+
+   @Override
+   public void paintComponent(Graphics g) {
+
+
+       super.paintComponent(g);
+
+
+       Graphics2D g2 = (Graphics2D) g;
+
+
+       g2.setColor(new Color(15, 15, 30));
+       g2.fillRect(0, 0, 1000, 700);
+
+
+       for (int i = 0; i < 1000; i += 40) {
+
+
+           g2.setColor(new Color(0, 120, 255));
+
+
+           g2.fillOval(i + waterOffset, 500, 50, 20);
+       }
+
+
+       g2.setColor(Color.CYAN);
+
+
+       g2.fillRect(470, 220, 5, 220);
+
+
+       g2.setColor(Color.ORANGE);
+
+
+       g2.fillOval(450, 180, 50, 50);
+
+
+       g2.setColor(Color.WHITE);
+
+
+       g2.drawString("🎣", 460, 170);
+
+
+       if (fishing) {
+
+
+           g2.setColor(Color.GREEN);
+
+
+           g2.fillOval(fishX, 450, 60, 30);
+
+
+           g2.setColor(Color.WHITE);
+
+
+           g2.drawString("🐟", fishX + 15, 470);
+       }
+
+
+       g2.setFont(new Font("Arial", Font.BOLD, 30));
+
+
+       g2.setColor(Color.CYAN);
+
+
+       g2.drawString("🌊 CYBER OCEAN 🌊", 320, 80);
+   }
+
+
+   @Override
+   public void actionPerformed(ActionEvent e) {
+
+
+       if (e.getSource() == fishButton) {
+
+
+           startFishing();
+       }
+
+
+       if (e.getSource() == rodButton) {
+
+
+           upgradeRod();
+       }
+
+
+       if (e.getSource() == baitButton) {
+
+
+           upgradeBait();
+       }
+
+
+       if (e.getSource() == saveButton) {
+
+
+           saveGame();
+       }
+   }
+
+
+   public static void main(String[] args) {
+
+
+       SwingUtilities.invokeLater(Main::new);
+   }
+}
+
